@@ -1,139 +1,128 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import api from '../services/api';
-import { useAuth } from './AuthContext';
+import axios from 'axios';
 
-const TicketContext = createContext({});
+const TicketContext = createContext();
 
-export function TicketProvider({ children }) {
+export const useTicket = () => useContext(TicketContext);
+
+export const TicketProvider = ({ children }) => {
   const [tickets, setTickets] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const { user } = useAuth();
 
-  useEffect(() => {
-    loadTickets();
-  }, [user]);
-
-  const loadTickets = async () => {
+  const fetchTickets = async (filters = {}) => {
     try {
       setLoading(true);
-      const response = await api.get('/tickets');
-      setTickets(response.data);
       setError(null);
-    } catch (err) {
-      setError('Erro ao carregar os chamados');
-      console.error(err);
+      
+      // Construir query string com os filtros
+      const queryParams = new URLSearchParams();
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) queryParams.append(key, value);
+      });
+      
+      const response = await axios.get(`/api/tickets?${queryParams.toString()}`);
+      setTickets(response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Erro ao buscar tickets:', error);
+      setError(error.response?.data?.message || 'Erro ao buscar tickets');
+      throw error;
     } finally {
       setLoading(false);
     }
   };
 
-  const getTicket = async (id) => {
+  const fetchTicketById = async (id) => {
     try {
-      const response = await api.get(`/tickets/${id}`);
+      setLoading(true);
+      setError(null);
+      const response = await axios.get(`/api/tickets/${id}`);
       return response.data;
-    } catch (err) {
-      setError('Erro ao carregar o chamado');
-      console.error(err);
-      return null;
+    } catch (error) {
+      console.error(`Erro ao buscar ticket ${id}:`, error);
+      setError(error.response?.data?.message || 'Erro ao buscar ticket');
+      throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
   const createTicket = async (ticketData) => {
     try {
-      const response = await api.post('/tickets', ticketData);
-      setTickets([...tickets, response.data]);
+      setLoading(true);
+      setError(null);
+      const response = await axios.post('/api/tickets', ticketData);
+      
+      // Atualizar a lista de tickets
+      setTickets(prevTickets => [...prevTickets, response.data]);
+      
       return response.data;
-    } catch (err) {
-      setError('Erro ao criar o chamado');
-      console.error(err);
-      throw err;
+    } catch (error) {
+      console.error('Erro ao criar ticket:', error);
+      setError(error.response?.data?.message || 'Erro ao criar ticket');
+      throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
   const updateTicket = async (id, ticketData) => {
     try {
-      const response = await api.put(`/tickets/${id}`, ticketData);
-      setTickets(tickets.map(ticket => 
-        ticket.id === id ? response.data : ticket
-      ));
+      setLoading(true);
+      setError(null);
+      const response = await axios.put(`/api/tickets/${id}`, ticketData);
+      
+      // Atualizar a lista de tickets
+      setTickets(prevTickets => 
+        prevTickets.map(ticket => 
+          ticket.id === id ? response.data : ticket
+        )
+      );
+      
       return response.data;
-    } catch (err) {
-      setError('Erro ao atualizar o chamado');
-      console.error(err);
-      throw err;
+    } catch (error) {
+      console.error(`Erro ao atualizar ticket ${id}:`, error);
+      setError(error.response?.data?.message || 'Erro ao atualizar ticket');
+      throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
   const deleteTicket = async (id) => {
     try {
-      await api.delete(`/tickets/${id}`);
-      setTickets(tickets.filter(ticket => ticket.id !== id));
-    } catch (err) {
-      setError('Erro ao excluir o chamado');
-      console.error(err);
-      throw err;
+      setLoading(true);
+      setError(null);
+      await axios.delete(`/api/tickets/${id}`);
+      
+      // Atualizar a lista de tickets
+      setTickets(prevTickets => 
+        prevTickets.filter(ticket => ticket.id !== id)
+      );
+      
+      return true;
+    } catch (error) {
+      console.error(`Erro ao excluir ticket ${id}:`, error);
+      setError(error.response?.data?.message || 'Erro ao excluir ticket');
+      throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getTicketComments = async (ticketId) => {
-    try {
-      const response = await api.get(`/tickets/${ticketId}/comments`);
-      return response.data;
-    } catch (err) {
-      setError('Erro ao carregar os comentários');
-      console.error(err);
-      return [];
-    }
+  const value = {
+    tickets,
+    loading,
+    error,
+    fetchTickets,
+    fetchTicketById,
+    createTicket,
+    updateTicket,
+    deleteTicket
   };
 
-  const addComment = async (ticketId, commentData) => {
-    try {
-      const response = await api.post(`/tickets/${ticketId}/comments`, commentData);
-      return response.data;
-    } catch (err) {
-      setError('Erro ao adicionar o comentário');
-      console.error(err);
-      throw err;
-    }
-  };
+  return <TicketContext.Provider value={value}>{children}</TicketContext.Provider>;
+};
 
-  const getTicketHistory = async (ticketId) => {
-    try {
-      const response = await api.get(`/tickets/${ticketId}/history`);
-      return response.data;
-    } catch (err) {
-      setError('Erro ao carregar o histórico');
-      console.error(err);
-      return [];
-    }
-  };
-
-  return (
-    <TicketContext.Provider
-      value={{
-        tickets,
-        loading,
-        error,
-        loadTickets,
-        getTicket,
-        createTicket,
-        updateTicket,
-        deleteTicket,
-        getTicketComments,
-        addComment,
-        getTicketHistory
-      }}
-    >
-      {children}
-    </TicketContext.Provider>
-  );
-}
-
-export function useTicket() {
-  const context = useContext(TicketContext);
-  if (!context) {
-    throw new Error('useTicket deve ser usado dentro de um TicketProvider');
-  }
-  return context;
-} 
+export default TicketContext;
