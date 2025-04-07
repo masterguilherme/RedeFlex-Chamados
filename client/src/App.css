@@ -1,106 +1,82 @@
-/* Estilos gerais */
-body {
-  margin: 0;
-  padding: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { ThemeProvider } from '@mui/material/styles';
+import { createTheme } from './theme';
+import CssBaseline from '@material-ui/core/CssBaseline';
+
+// Providers
+import { AuthProvider } from './context/AuthContext';
+import { SolicitationProvider } from './context/SolicitationContext';
+import { TechnicianProvider } from './context/TechnicianContext';
+import { CommentProvider } from './context/CommentContext';
+import { AttachmentProvider } from './context/AttachmentContext';
+import { NotificationProvider } from './context/NotificationContext';
+import { CompanyProvider } from './context/CompanyContext';
+import { UserProvider } from './context/UserContext';
+import { TicketProvider } from './contexts/TicketContext';
+
+// Routes
+import PrivateRoute from './components/auth/PrivateRoute';
+
+// Pages
+import Home from './pages/Home';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import AccessDenied from './pages/AccessDenied';
+import AdminPage from './pages/Admin/AdminPage';
+import ReportsPage from './components/reports/ReportsPage';
+import NotificationsPage from './pages/NotificationsPage';
+import CompaniesPage from './pages/admin/CompaniesPage';
+import UsersPage from './pages/admin/UsersPage';
+import TicketsList from './pages/tickets/TicketsList';
+import TicketDetails from './pages/tickets/TicketDetails';
+import TicketForm from './pages/tickets/TicketForm';
+
+import './App.css';
+
+function App() {
+  const theme = createTheme();
+
+  return (
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <AuthProvider>
+        <UserProvider>
+          <CompanyProvider>
+            <SolicitationProvider>
+              <TechnicianProvider>
+                <CommentProvider>
+                  <AttachmentProvider>
+                    <NotificationProvider>
+                      <TicketProvider>
+                        <Router>
+                          <Routes>
+                            <Route path="/login" element={<Login />} />
+                            <Route path="/register" element={<Register />} />
+                            <Route path="/access-denied" element={<AccessDenied />} />
+                            <Route path="/" element={<PrivateRoute><Home /></PrivateRoute>} />
+                            <Route path="/admin" element={<PrivateRoute><AdminPage /></PrivateRoute>} />
+                            <Route path="/reports" element={<PrivateRoute><ReportsPage /></PrivateRoute>} />
+                            <Route path="/notifications" element={<PrivateRoute><NotificationsPage /></PrivateRoute>} />
+                            <Route path="/admin/companies" element={<PrivateRoute><CompaniesPage /></PrivateRoute>} />
+                            <Route path="/admin/users" element={<PrivateRoute><UsersPage /></PrivateRoute>} />
+                            <Route path="/tickets" element={<PrivateRoute><TicketsList /></PrivateRoute>} />
+                            <Route path="/tickets/:id" element={<PrivateRoute><TicketDetails /></PrivateRoute>} />
+                            <Route path="/tickets/new" element={<PrivateRoute><TicketForm /></PrivateRoute>} />
+                            <Route path="/tickets/edit/:id" element={<PrivateRoute><TicketForm /></PrivateRoute>} />
+                          </Routes>
+                        </Router>
+                      </TicketProvider>
+                    </NotificationProvider>
+                  </AttachmentProvider>
+                </CommentProvider>
+              </TechnicianProvider>
+            </SolicitationProvider>
+          </CompanyProvider>
+        </UserProvider>
+      </AuthProvider>
+    </ThemeProvider>
+  );
 }
 
-.container {
-  padding: 20px;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-/* Estilos do formulário */
-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-/* Estilos dos cards */
-.MuiPaper-root {
-  transition: transform 0.2s ease-in-out;
-}
-
-.MuiPaper-root:hover {
-  transform: translateY(-2px);
-}
-
-/* Estilos dos botões */
-.MuiButton-root {
-  text-transform: none;
-}
-
-/* Estilos do navbar */
-.navbar {
-  background-color: #1976d2;
-  color: white;
-  padding: 1rem;
-}
-
-.navbar-brand {
-  color: white;
-  text-decoration: none;
-  font-weight: bold;
-}
-
-/* Estilos para formulários */
-.form-container {
-  max-width: 400px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-.form-field {
-  margin-bottom: 16px;
-  width: 100%;
-}
-
-/* Estilos para cards e papers */
-.card {
-  transition: transform 0.2s ease-in-out;
-}
-
-.card:hover {
-  transform: translateY(-4px);
-}
-
-/* Estilos para botões */
-.button-container {
-  margin-top: 16px;
-  display: flex;
-  justify-content: center;
-}
-
-/* Estilos para mensagens de erro e sucesso */
-.alert {
-  margin-bottom: 16px;
-}
-
-/* Estilos para loading */
-.loading-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 200px;
-}
-
-/* Estilos responsivos */
-@media (max-width: 600px) {
-  .container {
-    padding: 10px;
-  }
-  
-  .MuiGrid-container {
-    margin-top: 16px;
-  }
-  
-  .form-container {
-    padding: 10px;
-  }
-} 
+export default App;
