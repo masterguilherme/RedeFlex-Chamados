@@ -1,117 +1,94 @@
-import React, { createContext, useReducer, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
 import axios from 'axios';
-import authReducer from './authReducer';
-import setAuthToken from '../utils/setAuthToken';
 
-// Estado inicial
-const initialState = {
-  token: localStorage.getItem('token'),
-  isAuthenticated: null,
-  loading: true,
-  user: null,
-  error: null
-};
+const AuthContext = createContext();
 
-// Criar contexto
-export const AuthContext = createContext(initialState);
+export const useAuth = () => useContext(AuthContext);
 
-// Provider
 export const AuthProvider = ({ children }) => {
-  const [state, dispatch] = useReducer(authReducer, initialState);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Carregar usuário
   useEffect(() => {
-    const loadUser = async () => {
-      if (localStorage.token) {
-        setAuthToken(localStorage.token);
-      }
-
-      try {
-        const res = await axios.get('/api/auth/user');
-
-        dispatch({
-          type: 'USER_LOADED',
-          payload: res.data
-        });
-      } catch (err) {
-        dispatch({ type: 'AUTH_ERROR' });
-      }
-    };
-
-    loadUser();
+    // Verificar se há um token no localStorage
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      // Configurar o token no cabeçalho das requisições
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      
+      // Verificar se o token é válido
+      checkAuthStatus();
+    } else {
+      setLoading(false);
+    }
   }, []);
 
-  // Registrar usuário
-  const register = async (formData) => {
-    const config = {
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    };
-
+  const checkAuthStatus = async () => {
     try {
-      const res = await axios.post('/api/auth/register', formData, config);
-
-      dispatch({
-        type: 'REGISTER_SUCCESS',
-        payload: res.data
-      });
-
-      loadUser();
-    } catch (err) {
-      dispatch({
-        type: 'REGISTER_FAIL',
-        payload: err.response.data.msg
-      });
+      const response = await axios.get('/api/auth/me');
+      setCurrentUser(response.data);
+      setLoading(false);
+    } catch (error) {
+      console.error('Erro ao verificar autenticação:', error);
+      logout();
+      setLoading(false);
     }
   };
 
-  // Login
-  const login = async (formData) => {
-    const config = {
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    };
-
+  const login = async (email, password) => {
     try {
-      const res = await axios.post('/api/auth/login', formData, config);
-
-      dispatch({
-        type: 'LOGIN_SUCCESS',
-        payload: res.data
-      });
-
-      loadUser();
-    } catch (err) {
-      dispatch({
-        type: 'LOGIN_FAIL',
-        payload: err.response.data.msg
-      });
+      setError(null);
+      const response = await axios.post('/api/auth/login', { email, password });
+      const { token, user } = response.data;
+      
+      // Salvar o token no localStorage
+      localStorage.setItem('authToken', token);
+      
+      // Configurar o token no cabeçalho das requisições
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      
+      setCurrentUser(user);
+      return user;
+    } catch (error) {
+      console.error('Erro ao fazer login:', error);
+      setError(error.response?.data?.message || 'Erro ao fazer login');
+      throw error;
     }
   };
 
-  // Logout
-  const logout = () => dispatch({ type: 'LOGOUT' });
+  const register = async (userData) => {
+    try {
+      setError(null);
+      const response = await axios.post('/api/auth/register', userData);
+      return response.data;
+    } catch (error) {
+      console.error('Erro ao registrar usuário:', error);
+      setError(error.response?.data?.message || 'Erro ao registrar usuário');
+      throw error;
+    }
+  };
 
-  // Limpar erros
-  const clearErrors = () => dispatch({ type: 'CLEAR_ERRORS' });
+  const logout = () => {
+    // Remover o token do localStorage
+    localStorage.removeItem('authToken');
+    
+    // Remover o token do cabeçalho das requisições
+    delete axios.defaults.headers.common['Authorization'];
+    
+    setCurrentUser(null);
+  };
 
-  return (
-    <AuthContext.Provider
-      value={{
-        token: state.token,
-        isAuthenticated: state.isAuthenticated,
-        loading: state.loading,
-        user: state.user,
-        error: state.error,
-        register,
-        login,
-        logout,
-        clearErrors
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
-}; 
+  const value = {
+    currentUser,
+    loading,
+    error,
+    login,
+    register,
+    logout,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
+
+export default AuthContext;
