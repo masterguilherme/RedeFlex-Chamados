@@ -1,62 +1,87 @@
 import React, { useState, useEffect } from 'react';
-import { useCompany } from '../../context/CompanyContext';
-import {
-  Container,
-  Typography,
-  Box,
-  Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
+import { 
+  Container, 
+  Typography, 
+  Paper, 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableContainer, 
+  TableHead, 
   TableRow,
-  Paper,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
+  Button,
+  Box,
   TextField,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Snackbar,
   IconButton,
-  Alert,
-  CircularProgress
-} from '@material-ui/core';
-import { Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon } from '@material-ui/icons';
+  Tooltip,
+  Grid
+} from '@mui/material';
+import MuiAlert from '@mui/material/Alert';
+import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { useAuth } from '../../context/AuthContext';
+
+const Alert = React.forwardRef(function Alert(props, ref) {
+  return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
+});
 
 const CompaniesPage = () => {
-  const { companies, loading, error, getCompanies, addCompany, updateCompany, deleteCompany, clearErrors } = useCompany();
+  const [companies, setCompanies] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [openDialog, setOpenDialog] = useState(false);
-  const [selectedCompany, setSelectedCompany] = useState(null);
-  const [formData, setFormData] = useState({
+  const [openSnackbar, setOpenSnackbar] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarSeverity, setSnackbarSeverity] = useState('success');
+  const [currentCompany, setCurrentCompany] = useState({
+    id: null,
     name: '',
     cnpj: '',
-    address: '',
+    email: '',
     phone: '',
-    email: ''
+    address: ''
   });
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const { currentUser } = useAuth();
 
   useEffect(() => {
-    getCompanies();
-  }, [getCompanies]);
+    fetchCompanies();
+  }, []);
+
+  const fetchCompanies = async () => {
+    try {
+      setLoading(true);
+      // Simulando dados para demonstração
+      const mockCompanies = [
+        { id: 1, name: 'Empresa A', cnpj: '12.345.678/0001-90', email: 'contato@empresaa.com', phone: '(11) 1234-5678', address: 'Rua A, 123' },
+        { id: 2, name: 'Empresa B', cnpj: '98.765.432/0001-10', email: 'contato@empresab.com', phone: '(11) 8765-4321', address: 'Rua B, 456' },
+        { id: 3, name: 'Empresa C', cnpj: '45.678.901/0001-23', email: 'contato@empresac.com', phone: '(11) 4567-8901', address: 'Rua C, 789' }
+      ];
+      setCompanies(mockCompanies);
+    } catch (err) {
+      setError('Erro ao carregar empresas');
+      showSnackbar('Erro ao carregar empresas', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleOpenDialog = (company = null) => {
     if (company) {
-      setSelectedCompany(company);
-      setFormData({
-        name: company.name,
-        cnpj: company.cnpj,
-        address: company.address,
-        phone: company.phone,
-        email: company.email
-      });
+      setCurrentCompany(company);
     } else {
-      setSelectedCompany(null);
-      setFormData({
+      setCurrentCompany({
+        id: null,
         name: '',
         cnpj: '',
-        address: '',
+        email: '',
         phone: '',
-        email: ''
+        address: ''
       });
     }
     setOpenDialog(true);
@@ -64,186 +89,222 @@ const CompaniesPage = () => {
 
   const handleCloseDialog = () => {
     setOpenDialog(false);
-    setSelectedCompany(null);
-    setFormData({
-      name: '',
-      cnpj: '',
-      address: '',
-      phone: '',
-      email: ''
-    });
-    clearErrors();
   };
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setCurrentCompany(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSaveCompany = () => {
     try {
-      if (selectedCompany) {
-        await updateCompany(selectedCompany.id, formData);
+      if (currentCompany.id) {
+        // Atualizar empresa existente
+        const updatedCompanies = companies.map(company => 
+          company.id === currentCompany.id ? currentCompany : company
+        );
+        setCompanies(updatedCompanies);
+        showSnackbar('Empresa atualizada com sucesso', 'success');
       } else {
-        await addCompany(formData);
+        // Adicionar nova empresa
+        const newCompany = {
+          ...currentCompany,
+          id: Date.now() // Simulando um ID único
+        };
+        setCompanies([...companies, newCompany]);
+        showSnackbar('Empresa adicionada com sucesso', 'success');
       }
       handleCloseDialog();
     } catch (err) {
-      console.error(err);
+      showSnackbar('Erro ao salvar empresa', 'error');
     }
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Tem certeza que deseja desativar esta empresa?')) {
-      try {
-        await deleteCompany(id);
-      } catch (err) {
-        console.error(err);
-      }
+  const handleDeleteCompany = (id) => {
+    try {
+      const updatedCompanies = companies.filter(company => company.id !== id);
+      setCompanies(updatedCompanies);
+      showSnackbar('Empresa removida com sucesso', 'success');
+    } catch (err) {
+      showSnackbar('Erro ao remover empresa', 'error');
     }
   };
 
-  if (loading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-        <CircularProgress />
-      </Box>
-    );
-  }
+  const showSnackbar = (message, severity) => {
+    setSnackbarMessage(message);
+    setSnackbarSeverity(severity);
+    setOpenSnackbar(true);
+  };
+
+  const handleCloseSnackbar = () => {
+    setOpenSnackbar(false);
+  };
+
+  const filteredCompanies = companies.filter(company => 
+    company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    company.cnpj.includes(searchTerm) ||
+    company.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <Container maxWidth="lg">
-      <Box my={4}>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-          <Typography variant="h4" component="h1">
-            Gerenciamento de Empresas
-          </Typography>
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<AddIcon />}
-            onClick={() => handleOpenDialog()}
-          >
-            Nova Empresa
-          </Button>
-        </Box>
+      <Box sx={{ mt: 4, mb: 4 }}>
+        <Typography variant="h4" component="h1" gutterBottom>
+          Gerenciamento de Empresas
+        </Typography>
+        
+        <Grid container spacing={2} sx={{ mb: 3 }}>
+          <Grid item xs={12} sm={8} md={6}>
+            <TextField
+              fullWidth
+              label="Buscar empresas"
+              variant="outlined"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </Grid>
+          <Grid item xs={12} sm={4} md={6} sx={{ display: 'flex', justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<AddIcon />}
+              onClick={() => handleOpenDialog()}
+            >
+              Nova Empresa
+            </Button>
+          </Grid>
+        </Grid>
 
-        {error && (
-          <Alert severity="error" style={{ marginBottom: '1rem' }}>
-            {error}
-          </Alert>
-        )}
-
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Nome</TableCell>
-                <TableCell>CNPJ</TableCell>
-                <TableCell>Email</TableCell>
-                <TableCell>Telefone</TableCell>
-                <TableCell>Endereço</TableCell>
-                <TableCell align="right">Ações</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {companies.map((company) => (
-                <TableRow key={company.id}>
-                  <TableCell>{company.name}</TableCell>
-                  <TableCell>{company.cnpj}</TableCell>
-                  <TableCell>{company.email}</TableCell>
-                  <TableCell>{company.phone}</TableCell>
-                  <TableCell>{company.address}</TableCell>
-                  <TableCell align="right">
-                    <IconButton
-                      color="primary"
-                      onClick={() => handleOpenDialog(company)}
-                    >
-                      <EditIcon />
-                    </IconButton>
-                    <IconButton
-                      color="secondary"
-                      onClick={() => handleDelete(company.id)}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </TableCell>
+        {loading ? (
+          <Typography>Carregando...</Typography>
+        ) : error ? (
+          <Alert severity="error">{error}</Alert>
+        ) : (
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Nome</TableCell>
+                  <TableCell>CNPJ</TableCell>
+                  <TableCell>Email</TableCell>
+                  <TableCell>Telefone</TableCell>
+                  <TableCell>Endereço</TableCell>
+                  <TableCell align="center">Ações</TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-
-        <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-          <DialogTitle>
-            {selectedCompany ? 'Editar Empresa' : 'Nova Empresa'}
-          </DialogTitle>
-          <form onSubmit={handleSubmit}>
-            <DialogContent>
-              <TextField
-                autoFocus
-                margin="dense"
-                name="name"
-                label="Nome"
-                type="text"
-                fullWidth
-                value={formData.name}
-                onChange={handleChange}
-                required
-              />
-              <TextField
-                margin="dense"
-                name="cnpj"
-                label="CNPJ"
-                type="text"
-                fullWidth
-                value={formData.cnpj}
-                onChange={handleChange}
-                required
-                inputProps={{ maxLength: 14 }}
-              />
-              <TextField
-                margin="dense"
-                name="email"
-                label="Email"
-                type="email"
-                fullWidth
-                value={formData.email}
-                onChange={handleChange}
-                required
-              />
-              <TextField
-                margin="dense"
-                name="phone"
-                label="Telefone"
-                type="text"
-                fullWidth
-                value={formData.phone}
-                onChange={handleChange}
-                required
-              />
-              <TextField
-                margin="dense"
-                name="address"
-                label="Endereço"
-                type="text"
-                fullWidth
-                value={formData.address}
-                onChange={handleChange}
-                required
-              />
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={handleCloseDialog} color="primary">
-                Cancelar
-              </Button>
-              <Button type="submit" color="primary" variant="contained">
-                {selectedCompany ? 'Salvar' : 'Criar'}
-              </Button>
-            </DialogActions>
-          </form>
-        </Dialog>
+              </TableHead>
+              <TableBody>
+                {filteredCompanies.length > 0 ? (
+                  filteredCompanies.map((company) => (
+                    <TableRow key={company.id}>
+                      <TableCell>{company.name}</TableCell>
+                      <TableCell>{company.cnpj}</TableCell>
+                      <TableCell>{company.email}</TableCell>
+                      <TableCell>{company.phone}</TableCell>
+                      <TableCell>{company.address}</TableCell>
+                      <TableCell align="center">
+                        <Tooltip title="Editar">
+                          <IconButton onClick={() => handleOpenDialog(company)} color="primary">
+                            <EditIcon />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Excluir">
+                          <IconButton onClick={() => handleDeleteCompany(company.id)} color="error">
+                            <DeleteIcon />
+                          </IconButton>
+                        </Tooltip>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={6} align="center">
+                      Nenhuma empresa encontrada
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
       </Box>
+
+      {/* Dialog para adicionar/editar empresa */}
+      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          {currentCompany.id ? 'Editar Empresa' : 'Nova Empresa'}
+        </DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            name="name"
+            label="Nome da Empresa"
+            type="text"
+            fullWidth
+            variant="outlined"
+            value={currentCompany.name}
+            onChange={handleInputChange}
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            margin="dense"
+            name="cnpj"
+            label="CNPJ"
+            type="text"
+            fullWidth
+            variant="outlined"
+            value={currentCompany.cnpj}
+            onChange={handleInputChange}
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            margin="dense"
+            name="email"
+            label="Email"
+            type="email"
+            fullWidth
+            variant="outlined"
+            value={currentCompany.email}
+            onChange={handleInputChange}
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            margin="dense"
+            name="phone"
+            label="Telefone"
+            type="text"
+            fullWidth
+            variant="outlined"
+            value={currentCompany.phone}
+            onChange={handleInputChange}
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            margin="dense"
+            name="address"
+            label="Endereço"
+            type="text"
+            fullWidth
+            variant="outlined"
+            value={currentCompany.address}
+            onChange={handleInputChange}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDialog} color="inherit">Cancelar</Button>
+          <Button onClick={handleSaveCompany} color="primary" variant="contained">Salvar</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar para feedback */}
+      <Snackbar open={openSnackbar} autoHideDuration={6000} onClose={handleCloseSnackbar}>
+        <Alert onClose={handleCloseSnackbar} severity={snackbarSeverity} sx={{ width: '100%' }}>
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };

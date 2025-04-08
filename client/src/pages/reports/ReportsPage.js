@@ -27,8 +27,8 @@ import {
   Download as DownloadIcon,
   Schedule as ScheduleIcon
 } from '@mui/icons-material';
-import { useReports } from '../../contexts/ReportContext';
-import { useAuth } from '../../contexts/AuthContext';
+import { useReports } from '../../context/ReportContext';
+import { useAuth } from '../../context/AuthContext';
 import ReportForm from './ReportForm';
 import ReportMetrics from './ReportMetrics';
 

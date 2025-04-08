@@ -26,8 +26,8 @@ import {
   Visibility as ViewIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { useTicket } from '../../contexts/TicketContext';
-import { useAuth } from '../../contexts/AuthContext';
+import { useTicket } from '../../context/TicketContext';
+import { useAuth } from '../../context/AuthContext';
 
 const TicketsList = () => {
   const navigate = useNavigate();

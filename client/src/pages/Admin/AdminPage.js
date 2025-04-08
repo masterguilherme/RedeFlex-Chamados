@@ -1,84 +1,97 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Container, 
-  Box, 
   Typography, 
-  Tabs, 
-  Tab, 
-  Paper,
-  Divider
-} from '@material-ui/core';
-import UserList from '../../components/admin/UserList';
-import CompanyList from '../../components/admin/CompanyList';
-
-// Componente para o painel de abas
-function TabPanel(props) {
-  const { children, value, index, ...other } = props;
-
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`admin-tabpanel-${index}`}
-      aria-labelledby={`admin-tab-${index}`}
-      {...other}
-    >
-      {value === index && (
-        <Box p={3}>
-          {children}
-        </Box>
-      )}
-    </div>
-  );
-}
-
-// Função para acessibilidade das abas
-function a11yProps(index) {
-  return {
-    id: `admin-tab-${index}`,
-    'aria-controls': `admin-tabpanel-${index}`,
-  };
-}
+  Paper, 
+  Box, 
+  Grid,
+  Card,
+  CardContent,
+  CardActions,
+  Button
+} from '@mui/material';
+import { 
+  Dashboard as DashboardIcon,
+  People as PeopleIcon,
+  Business as BusinessIcon,
+  Assignment as AssignmentIcon,
+  BarChart as BarChartIcon
+} from '@mui/icons-material';
+import { useAuth } from '../../context/AuthContext';
 
 const AdminPage = () => {
-  const [tabValue, setTabValue] = useState(0);
+  const { currentUser } = useAuth();
+  const navigate = useNavigate();
 
-  const handleTabChange = (event, newValue) => {
-    setTabValue(newValue);
-  };
+  const adminModules = [
+    {
+      title: 'Usuários',
+      description: 'Gerenciar usuários do sistema',
+      icon: <PeopleIcon fontSize="large" color="primary" />,
+      path: '/admin/users'
+    },
+    {
+      title: 'Empresas',
+      description: 'Gerenciar empresas cadastradas',
+      icon: <BusinessIcon fontSize="large" color="primary" />,
+      path: '/admin/companies'
+    },
+    {
+      title: 'Chamados',
+      description: 'Visualizar todos os chamados',
+      icon: <AssignmentIcon fontSize="large" color="primary" />,
+      path: '/tickets'
+    },
+    {
+      title: 'Relatórios',
+      description: 'Gerar relatórios e visualizar métricas',
+      icon: <BarChartIcon fontSize="large" color="primary" />,
+      path: '/reports'
+    }
+  ];
 
   return (
     <Container maxWidth="lg">
-      <Box my={4}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          Painel Administrativo
-        </Typography>
-        <Typography variant="subtitle1" color="textSecondary" paragraph>
-          Gerencie usuários e empresas do sistema
-        </Typography>
-        
-        <Paper elevation={3}>
-          <Tabs
-            value={tabValue}
-            onChange={handleTabChange}
-            indicatorColor="primary"
-            textColor="primary"
-            variant="fullWidth"
-            aria-label="painel administrativo"
-          >
-            <Tab label="Usuários" {...a11yProps(0)} />
-            <Tab label="Empresas" {...a11yProps(1)} />
-          </Tabs>
-          
-          <Divider />
-          
-          <TabPanel value={tabValue} index={0}>
-            <UserList />
-          </TabPanel>
-          <TabPanel value={tabValue} index={1}>
-            <CompanyList />
-          </TabPanel>
+      <Box sx={{ mt: 4, mb: 4 }}>
+        <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+            <DashboardIcon fontSize="large" color="primary" sx={{ mr: 2 }} />
+            <Typography variant="h4" component="h1">
+              Painel Administrativo
+            </Typography>
+          </Box>
+          <Typography variant="body1">
+            Bem-vindo ao painel administrativo, {currentUser?.name || 'Administrador'}. Aqui você pode gerenciar todos os aspectos do sistema.
+          </Typography>
         </Paper>
+
+        <Grid container spacing={3}>
+          {adminModules.map((module, index) => (
+            <Grid item xs={12} sm={6} md={3} key={index}>
+              <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <CardContent sx={{ flexGrow: 1, textAlign: 'center', pt: 3 }}>
+                  {module.icon}
+                  <Typography variant="h6" component="h2" sx={{ mt: 2 }}>
+                    {module.title}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {module.description}
+                  </Typography>
+                </CardContent>
+                <CardActions sx={{ justifyContent: 'center', pb: 2 }}>
+                  <Button 
+                    variant="contained" 
+                    color="primary"
+                    onClick={() => navigate(module.path)}
+                  >
+                    Acessar
+                  </Button>
+                </CardActions>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
       </Box>
     </Container>
   );

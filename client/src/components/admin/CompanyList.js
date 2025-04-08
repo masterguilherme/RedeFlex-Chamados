@@ -16,15 +16,16 @@ import {
   DialogContent,
   DialogActions,
   TextField
-} from '@material-ui/core';
-import { Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon } from '@material-ui/icons';
-import axios from 'axios';
+} from '@mui/material';
+import { Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon } from '@mui/icons-material';
+import { useCompany } from '../../context/CompanyContext';
 
 const CompanyList = () => {
-  const [companies, setCompanies] = useState([]);
-  const [open, setOpen] = useState(false);
-  const [editCompany, setEditCompany] = useState(null);
-  const [formData, setFormData] = useState({
+  const { companies, loading, error, fetchCompanies, createCompany, updateCompany, deleteCompany } = useCompany();
+  const [openDialog, setOpenDialog] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [currentCompany, setCurrentCompany] = useState({
+    id: null,
     name: '',
     cnpj: '',
     address: '',
@@ -33,87 +34,91 @@ const CompanyList = () => {
   });
 
   useEffect(() => {
-    loadCompanies();
-  }, []);
+    fetchCompanies();
+  }, [fetchCompanies]);
 
-  const loadCompanies = async () => {
-    try {
-      const res = await axios.get('/api/companies');
-      setCompanies(res.data);
-    } catch (err) {
-      console.error('Erro ao carregar empresas:', err);
-    }
-  };
-
-  const handleOpen = (company = null) => {
+  const handleOpenDialog = (company = null) => {
     if (company) {
-      setEditCompany(company);
-      setFormData({
-        name: company.name,
-        cnpj: company.cnpj,
-        address: company.address,
-        phone: company.phone,
-        email: company.email
-      });
+      setCurrentCompany(company);
+      setEditMode(true);
     } else {
-      setEditCompany(null);
-      setFormData({
+      setCurrentCompany({
+        id: null,
         name: '',
         cnpj: '',
         address: '',
         phone: '',
         email: ''
       });
+      setEditMode(false);
     }
-    setOpen(true);
+    setOpenDialog(true);
   };
 
-  const handleClose = () => {
-    setOpen(false);
-    setEditCompany(null);
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
   };
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setCurrentCompany(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
     try {
-      if (editCompany) {
-        await axios.put(`/api/companies/${editCompany.id}`, formData);
+      if (editMode) {
+        await updateCompany(currentCompany.id, currentCompany);
       } else {
-        await axios.post('/api/companies', formData);
+        await createCompany(currentCompany);
       }
-      handleClose();
-      loadCompanies();
-    } catch (err) {
-      console.error('Erro ao salvar empresa:', err);
+      handleCloseDialog();
+    } catch (error) {
+      console.error('Erro ao salvar empresa:', error);
     }
   };
 
   const handleDelete = async (id) => {
     if (window.confirm('Tem certeza que deseja excluir esta empresa?')) {
       try {
-        await axios.delete(`/api/companies/${id}`);
-        loadCompanies();
-      } catch (err) {
-        console.error('Erro ao excluir empresa:', err);
+        await deleteCompany(id);
+      } catch (error) {
+        console.error('Erro ao excluir empresa:', error);
       }
     }
   };
 
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" p={3}>
+        <Typography>Carregando...</Typography>
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box p={2}>
+        <Typography color="error">{error}</Typography>
+      </Box>
+    );
+  }
+
   return (
     <Box>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-        <Typography variant="h5">Empresas</Typography>
+        <Typography variant="h6">Empresas</Typography>
         <Button
           variant="contained"
           color="primary"
           startIcon={<AddIcon />}
-          onClick={() => handleOpen()}
+          onClick={() => handleOpenDialog()}
         >
-          Nova Empresa
+          Adicionar Empresa
         </Button>
       </Box>
 
@@ -123,9 +128,8 @@ const CompanyList = () => {
             <TableRow>
               <TableCell>Nome</TableCell>
               <TableCell>CNPJ</TableCell>
-              <TableCell>Endereço</TableCell>
-              <TableCell>Telefone</TableCell>
               <TableCell>Email</TableCell>
+              <TableCell>Telefone</TableCell>
               <TableCell>Ações</TableCell>
             </TableRow>
           </TableHead>
@@ -134,14 +138,19 @@ const CompanyList = () => {
               <TableRow key={company.id}>
                 <TableCell>{company.name}</TableCell>
                 <TableCell>{company.cnpj}</TableCell>
-                <TableCell>{company.address}</TableCell>
-                <TableCell>{company.phone}</TableCell>
                 <TableCell>{company.email}</TableCell>
+                <TableCell>{company.phone}</TableCell>
                 <TableCell>
-                  <IconButton onClick={() => handleOpen(company)}>
+                  <IconButton
+                    color="primary"
+                    onClick={() => handleOpenDialog(company)}
+                  >
                     <EditIcon />
                   </IconButton>
-                  <IconButton onClick={() => handleDelete(company.id)}>
+                  <IconButton
+                    color="error"
+                    onClick={() => handleDelete(company.id)}
+                  >
                     <DeleteIcon />
                   </IconButton>
                 </TableCell>
@@ -151,63 +160,71 @@ const CompanyList = () => {
         </Table>
       </TableContainer>
 
-      <Dialog open={open} onClose={handleClose}>
-        <DialogTitle>{editCompany ? 'Editar Empresa' : 'Nova Empresa'}</DialogTitle>
+      <Dialog open={openDialog} onClose={handleCloseDialog}>
+        <DialogTitle>{editMode ? 'Editar Empresa' : 'Nova Empresa'}</DialogTitle>
         <DialogContent>
-          <form onSubmit={handleSubmit}>
+          <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
             <TextField
+              margin="normal"
+              required
               fullWidth
+              id="name"
               label="Nome"
               name="name"
-              value={formData.name}
+              autoComplete="name"
+              autoFocus
+              value={currentCompany.name}
               onChange={handleChange}
-              margin="normal"
-              required
             />
             <TextField
+              margin="normal"
+              required
               fullWidth
+              id="cnpj"
               label="CNPJ"
               name="cnpj"
-              value={formData.cnpj}
+              autoComplete="cnpj"
+              value={currentCompany.cnpj}
               onChange={handleChange}
-              margin="normal"
-              required
-              inputProps={{ maxLength: 14 }}
             />
             <TextField
-              fullWidth
-              label="Endereço"
-              name="address"
-              value={formData.address}
-              onChange={handleChange}
               margin="normal"
               required
-            />
-            <TextField
               fullWidth
-              label="Telefone"
-              name="phone"
-              value={formData.phone}
-              onChange={handleChange}
-              margin="normal"
-              required
-            />
-            <TextField
-              fullWidth
+              id="email"
               label="Email"
               name="email"
-              type="email"
-              value={formData.email}
+              autoComplete="email"
+              value={currentCompany.email}
               onChange={handleChange}
+            />
+            <TextField
               margin="normal"
               required
+              fullWidth
+              id="phone"
+              label="Telefone"
+              name="phone"
+              autoComplete="phone"
+              value={currentCompany.phone}
+              onChange={handleChange}
             />
-          </form>
+            <TextField
+              margin="normal"
+              fullWidth
+              id="address"
+              label="Endereço"
+              name="address"
+              autoComplete="address"
+              value={currentCompany.address}
+              onChange={handleChange}
+            />
+          </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleClose}>Cancelar</Button>
-          <Button onClick={handleSubmit} color="primary">
-            Salvar
+          <Button onClick={handleCloseDialog}>Cancelar</Button>
+          <Button onClick={handleSubmit} variant="contained" color="primary">
+            {editMode ? 'Salvar' : 'Criar'}
           </Button>
         </DialogActions>
       </Dialog>

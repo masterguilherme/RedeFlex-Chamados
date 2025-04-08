@@ -25,7 +25,7 @@ import {
   Legend,
   ResponsiveContainer
 } from 'recharts';
-import { useReports } from '../../contexts/ReportContext';
+import { useReports } from '../../context/ReportContext';
 import { format, subDays, subMonths, subWeeks } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 

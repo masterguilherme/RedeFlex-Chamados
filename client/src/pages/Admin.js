@@ -6,7 +6,7 @@ import {
   Tab,
   Box,
   Typography
-} from '@material-ui/core';
+} from '@mui/material';
 import UserList from '../components/admin/UserList';
 import CompanyList from '../components/admin/CompanyList';
 
@@ -22,7 +22,7 @@ function TabPanel(props) {
       {...other}
     >
       {value === index && (
-        <Box p={3}>
+        <Box sx={{ p: 3 }}>
           {children}
         </Box>
       )}
@@ -30,36 +30,43 @@ function TabPanel(props) {
   );
 }
 
+function a11yProps(index) {
+  return {
+    id: `admin-tab-${index}`,
+    'aria-controls': `admin-tabpanel-${index}`,
+  };
+}
+
 const Admin = () => {
-  const [value, setValue] = useState(0);
+  const [tabValue, setTabValue] = useState(0);
 
   const handleChange = (event, newValue) => {
-    setValue(newValue);
+    setTabValue(newValue);
   };
 
   return (
     <Container maxWidth="lg">
-      <Box my={4}>
+      <Box sx={{ mt: 4, mb: 4 }}>
         <Typography variant="h4" component="h1" gutterBottom>
           Painel Administrativo
         </Typography>
-
-        <Paper>
+        <Paper elevation={3}>
           <Tabs
-            value={value}
+            value={tabValue}
             onChange={handleChange}
             indicatorColor="primary"
             textColor="primary"
             variant="fullWidth"
+            aria-label="painel administrativo"
           >
-            <Tab label="Usuários" />
-            <Tab label="Empresas" />
+            <Tab label="Usuários" {...a11yProps(0)} />
+            <Tab label="Empresas" {...a11yProps(1)} />
           </Tabs>
-
-          <TabPanel value={value} index={0}>
+          
+          <TabPanel value={tabValue} index={0}>
             <UserList />
           </TabPanel>
-          <TabPanel value={value} index={1}>
+          <TabPanel value={tabValue} index={1}>
             <CompanyList />
           </TabPanel>
         </Paper>

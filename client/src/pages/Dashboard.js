@@ -22,16 +22,16 @@ import {
   AccessTime as TimeIcon,
   Warning as WarningIcon
 } from '@mui/icons-material';
-import { useAuth } from '../contexts/AuthContext';
-import { useTickets } from '../contexts/TicketContext';
-import { useCompanies } from '../contexts/CompanyContext';
-import { useUsers } from '../contexts/UserContext';
+import { useAuth } from '../context/AuthContext';
+import { useTicket } from '../context/TicketContext';
+import { useCompany } from '../context/CompanyContext';
+import { useUser } from '../context/UserContext';
 
 const Dashboard = () => {
   const { user } = useAuth();
-  const { tickets, loading: ticketsLoading } = useTickets();
-  const { companies, loading: companiesLoading } = useCompanies();
-  const { users, loading: usersLoading } = useUsers();
+  const { tickets, loading: ticketsLoading } = useTicket();
+  const { companies, loading: companiesLoading } = useCompany();
+  const { users, loading: usersLoading } = useUser();
 
   const [stats, setStats] = useState({
     totalTickets: 0,

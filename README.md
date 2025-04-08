@@ -171,12 +171,24 @@ Sistema web para gerenciamento de chamados de suporte, desenvolvido com React e 
 client/
   ├── src/
   │   ├── pages/
-  │   │   └── reports/
-  │   │       ├── ReportsPage.js
-  │   │       ├── ReportForm.js
-  │   │       └── ReportMetrics.js
-  │   └── contexts/
-  │       └── ReportContext.js
+  │   │   ├── reports/
+  │   │   │   ├── ReportsPage.js
+  │   │   │   ├── ReportForm.js
+  │   │   │   └── ReportMetrics.js
+  │   │   ├── tickets/
+  │   │   │   ├── TicketDetails.js
+  │   │   │   ├── TicketForm.js
+  │   │   │   └── TicketsList.js
+  │   │   └── Dashboard.js
+  │   ├── components/
+  │   │   ├── layout/
+  │   │   │   └── Navbar.js
+  │   │   └── notifications/
+  │   │       └── NotificationCenter.js
+  │   └── context/
+  │       ├── AuthContext.js
+  │       ├── ReportContext.js
+  │       └── TicketContext.js
 server/
   ├── models/
   │   └── Report.js
@@ -814,3 +826,91 @@ server/
 - pdfkit: ^0.14.0
 - json2csv: ^6.0.0
 - express-validator: ^7.0.1
+
+### Estrutura de Contextos
+
+O projeto utiliza a Context API do React para gerenciamento de estado global. Todos os contextos estão centralizados na pasta `context/` para facilitar a manutenção e garantir consistência no acesso aos dados.
+
+#### Contextos Disponíveis
+
+1. **AuthContext**
+   - Gerencia o estado de autenticação do usuário
+   - Fornece funções para login, logout e verificação de permissões
+   - Disponibiliza informações do usuário atual
+
+2. **TicketContext**
+   - Gerencia o estado dos chamados (tickets)
+   - Fornece funções para criar, atualizar, listar e excluir chamados
+   - Controla o estado de carregamento e erros relacionados aos chamados
+
+3. **ReportContext**
+   - Gerencia o estado dos relatórios
+   - Fornece funções para criar, atualizar, listar e excluir relatórios
+   - Implementa a geração de relatórios e métricas
+
+#### Uso dos Contextos
+
+Para utilizar um contexto em qualquer componente, importe o hook correspondente:
+
+```jsx
+import { useAuth } from '../context/AuthContext';
+import { useTicket } from '../context/TicketContext';
+import { useReports } from '../context/ReportContext';
+
+function MeuComponente() {
+  const { user, logout } = useAuth();
+  const { tickets, loading } = useTicket();
+  const { reports, createReport } = useReports();
+  
+  // Uso dos dados e funções dos contextos
+}
+```
+
+#### Providers
+
+Os providers dos contextos devem ser configurados no componente raiz da aplicação (App.js):
+
+```jsx
+import { AuthProvider } from './context/AuthContext';
+import { TicketProvider } from './context/TicketContext';
+import { ReportProvider } from './context/ReportContext';
+
+function App() {
+  return (
+    <AuthProvider>
+      <TicketProvider>
+        <ReportProvider>
+          {/* Resto da aplicação */}
+        </ReportProvider>
+      </TicketProvider>
+    </AuthProvider>
+  );
+}
+```
+
+## Atualizações Recentes
+
+### Consolidação de Contextos
+
+Recentemente, realizamos uma consolidação dos contextos do React para melhorar a organização e manutenção do código:
+
+1. **Centralização de Contextos**
+   - Todos os contextos foram movidos para a pasta `context/`
+   - Removida a pasta `contexts/` para evitar duplicidade
+   - Atualizados todos os imports nos componentes para refletir a nova estrutura
+
+2. **Contextos Consolidados**
+   - `AuthContext.js`: Gerencia autenticação e permissões
+   - `TicketContext.js`: Gerencia operações relacionadas a chamados
+   - `ReportContext.js`: Gerencia relatórios e métricas
+
+3. **Benefícios da Consolidação**
+   - Código mais organizado e fácil de manter
+   - Redução de duplicação de código
+   - Padronização dos imports em todo o projeto
+   - Melhor experiência para novos desenvolvedores
+
+### Atualizações de Dependências
+
+- Atualização do Material-UI de `@material-ui/core` para `@mui/material`
+- Atualização do React Router para usar `useNavigate` em vez de `useHistory`

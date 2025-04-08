@@ -27,7 +27,7 @@ import {
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
-import { useReports } from '../../contexts/ReportContext';
+import { useReports } from '../../context/ReportContext';
 
 const schema = yup.object().shape({
   name: yup.string().required('Nome é obrigatório'),

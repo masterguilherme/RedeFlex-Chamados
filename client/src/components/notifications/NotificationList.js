@@ -13,7 +13,7 @@ import {
   Button,
   CircularProgress,
   Alert
-} from '@material-ui/core';
+} from '@mui/material';
 import { 
   Notifications as NotificationsIcon, 
   Info as InfoIcon, 
@@ -22,15 +22,15 @@ import {
   Error as ErrorIcon,
   Delete as DeleteIcon,
   DoneAll as DoneAllIcon
-} from '@material-ui/icons';
+} from '@mui/icons-material';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { useHistory } from 'react-router-dom';
-import { useNotifications } from '../../context/NotificationContext';
+import { useNavigate } from 'react-router-dom';
+import { useNotification } from '../../context/NotificationContext';
 
 const NotificationList = () => {
-  const { notifications, loading, error, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
-  const history = useHistory();
+  const { notifications, loading, error, markAsRead, markAllAsRead, deleteNotification } = useNotification();
+  const navigate = useNavigate();
 
   const handleNotificationClick = (notification) => {
     if (!notification.read) {
@@ -38,7 +38,7 @@ const NotificationList = () => {
     }
     
     if (notification.link) {
-      history.push(notification.link);
+      navigate(notification.link);
     }
   };
 
@@ -47,7 +47,7 @@ const NotificationList = () => {
       case 'success':
         return <SuccessIcon color="primary" />;
       case 'warning':
-        return <WarningIcon style={{ color: '#ff9800' }} />;
+        return <WarningIcon sx={{ color: '#ff9800' }} />;
       case 'error':
         return <ErrorIcon color="error" />;
       default:
@@ -78,7 +78,7 @@ const NotificationList = () => {
   if (notifications.length === 0) {
     return (
       <Box p={3} textAlign="center">
-        <NotificationsIcon style={{ fontSize: 60, color: '#ccc' }} />
+        <NotificationsIcon sx={{ fontSize: 60, color: '#ccc' }} />
         <Typography variant="h6" color="textSecondary">
           Você não tem notificações
         </Typography>
@@ -107,20 +107,18 @@ const NotificationList = () => {
             <ListItem 
               button 
               onClick={() => handleNotificationClick(notification)}
-              style={{ 
+              sx={{ 
                 backgroundColor: notification.read ? 'transparent' : 'rgba(0, 0, 0, 0.04)',
-                cursor: notification.link ? 'pointer' : 'default'
+                '&:hover': {
+                  backgroundColor: 'rgba(0, 0, 0, 0.08)'
+                }
               }}
             >
               <ListItemIcon>
                 {getNotificationIcon(notification.type)}
               </ListItemIcon>
               <ListItemText
-                primary={
-                  <Typography variant="subtitle1" style={{ fontWeight: notification.read ? 'normal' : 'bold' }}>
-                    {notification.title}
-                  </Typography>
-                }
+                primary={notification.title}
                 secondary={
                   <>
                     <Typography variant="body2" component="span">
@@ -133,7 +131,14 @@ const NotificationList = () => {
                 }
               />
               <ListItemSecondaryAction>
-                <IconButton edge="end" onClick={() => deleteNotification(notification.id)}>
+                <IconButton 
+                  edge="end" 
+                  aria-label="delete"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deleteNotification(notification.id);
+                  }}
+                >
                   <DeleteIcon />
                 </IconButton>
               </ListItemSecondaryAction>
